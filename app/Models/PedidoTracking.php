@@ -1,0 +1,17 @@
+<?php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class PedidoTracking extends Model
+{
+    protected $table = 'pedido_trackings';
+    protected $fillable = [
+        'pedido_id', 'estado', 'descripcion', 'ubicacion'
+    ];
+
+    public function pedido()
+    {
+        return $this->belongsTo(Pedido::class);
+    }
+}

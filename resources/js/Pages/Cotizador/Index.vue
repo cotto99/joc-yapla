@@ -1,3 +1,4 @@
+ponemele el logo de safari y usa paleta de colores amarillo blanco y gris porfa 
 <script setup>
 import { useForm, usePage } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
@@ -6,10 +7,9 @@ import { Head } from '@inertiajs/vue3'
 const page = usePage()
 
 const form = useForm({
-    link_amazon:      '',
-    precio_usd:       '',
-    imagen_url:       '',
-    nombre_producto:  '',
+    link_amazon:     '',
+    precio_usd:      '',
+    nombre_producto: '',
 })
 
 const cotizacion      = ref(page.props.flash?.cotizacion || null)
@@ -55,17 +55,19 @@ function fmt(val, moneda = 'GTQ') {
 
         <!-- HEADER -->
         <header class="bg-gradient-to-r from-orange-500 to-yellow-500 text-white shadow-lg">
-            <div class="max-w-5xl mx-auto px-4 py-5 flex items-center justify-between">
-                <div>
-                    <h1 class="text-2xl font-black tracking-tight">📦 JOC-YAPLA</h1>
-                    <p class="text-orange-100 text-xs mt-0.5">Importaciones desde Amazon a Guatemala</p>
-                </div>
-                <div class="text-right text-xs text-orange-100">
-                    <p>¿Dudas? Escríbenos</p>
-                    <p class="font-bold text-white text-sm">WhatsApp</p>
-                </div>
-            </div>
-        </header>
+    <div class="max-w-5xl mx-auto px-4 py-5 flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-black tracking-tight">📦 JOC-YAPLA</h1>
+            <p class="text-orange-100 text-xs mt-0.5">Importaciones desde Amazon a Guatemala</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="/tracking"
+               class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                📦 Rastrear pedido
+            </a>
+        </div>
+    </div>
+</header>
 
         <div class="max-w-5xl mx-auto px-4 py-8">
 
@@ -81,60 +83,59 @@ function fmt(val, moneda = 'GTQ') {
             </div>
 
             <!-- FORMULARIO COTIZADOR -->
-            <div class="bg-white rounded-2xl shadow-xl p-6 lg:p-8 mb-8">
-                <h3 class="text-lg font-bold text-gray-700 mb-5">🔍 Cotizá tu producto</h3>
+            <!-- FORMULARIO COTIZADOR -->
+<div class="bg-white rounded-2xl shadow-xl p-6 lg:p-8 mb-8">
+    <h3 class="text-lg font-bold text-gray-700 mb-5">🔍 Cotizá tu producto</h3>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-600 mb-1">
-                            Link de Amazon *
-                        </label>
-                        <input v-model="form.link_amazon" type="url"
-                               placeholder="https://www.amazon.com/producto..."
-                               class="w-full border-2 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition" />
-                        <p v-if="form.errors.link_amazon" class="text-red-500 text-xs mt-1">{{ form.errors.link_amazon }}</p>
-                    </div>
+    <div class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">
+                Link de Amazon *
+            </label>
+            <input v-model="form.link_amazon" type="url"
+                   placeholder="https://www.amazon.com/dp/B08N5WRWNW"
+                   class="w-full border-2 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition" />
+            <p class="text-xs text-gray-400 mt-1">
+                💡 Copiá el link completo del producto en Amazon
+            </p>
+            <p v-if="form.errors.link_amazon" class="text-red-500 text-xs mt-1">
+                {{ form.errors.link_amazon }}
+            </p>
+        </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-600 mb-1">
-                            Precio en Amazon (USD) *
-                        </label>
-                        <div class="relative">
-                            <span class="absolute left-3 top-3 text-gray-400 font-bold">$</span>
-                            <input v-model="form.precio_usd" type="number" step="0.01" min="0"
-                                   placeholder="0.00"
-                                   class="w-full border-2 rounded-xl pl-8 pr-4 py-3 text-sm focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition" />
-                        </div>
-                        <p v-if="form.errors.precio_usd" class="text-red-500 text-xs mt-1">{{ form.errors.precio_usd }}</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-600 mb-1">
-                            Nombre del producto
-                        </label>
-                        <input v-model="form.nombre_producto" type="text"
-                               placeholder="Ej: Auriculares Sony WH-1000XM5"
-                               class="w-full border-2 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition" />
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-600 mb-1">
-                            URL de imagen del producto (opcional)
-                        </label>
-                        <input v-model="form.imagen_url" type="url"
-                               placeholder="https://m.media-amazon.com/images/..."
-                               class="w-full border-2 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition" />
-                        <p class="text-xs text-gray-400 mt-1">
-                            💡 En Amazon, clic derecho en la foto del producto → "Copiar dirección de imagen"
-                        </p>
-                    </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">
+                    Precio en Amazon (USD) *
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3 top-3 text-gray-400 font-bold">$</span>
+                    <input v-model="form.precio_usd" type="number" step="0.01" min="0"
+                           placeholder="0.00"
+                           class="w-full border-2 rounded-xl pl-8 pr-4 py-3 text-sm focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition" />
                 </div>
-
-                <button @click="cotizar" :disabled="form.processing"
-                        class="w-full bg-gradient-to-r from-orange-500 to-yellow-500 text-white py-4 rounded-xl font-bold text-lg hover:from-orange-600 hover:to-yellow-600 transition disabled:opacity-50 shadow-lg">
-                    {{ form.processing ? '⏳ Calculando...' : '🧮 Calcular precio en Guatemala' }}
-                </button>
+                <p v-if="form.errors.precio_usd" class="text-red-500 text-xs mt-1">
+                    {{ form.errors.precio_usd }}
+                </p>
             </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">
+                    Nombre del producto
+                    <span class="text-gray-400 font-normal">(opcional)</span>
+                </label>
+                <input v-model="form.nombre_producto" type="text"
+                       placeholder="Ej: Auriculares Sony WH-1000XM5"
+                       class="w-full border-2 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition" />
+            </div>
+        </div>
+    </div>
+
+    <button @click="cotizar" :disabled="form.processing"
+            class="w-full mt-6 bg-gradient-to-r from-orange-500 to-yellow-500 text-white py-4 rounded-xl font-bold text-lg hover:from-orange-600 hover:to-yellow-600 transition disabled:opacity-50 shadow-lg">
+        {{ form.processing ? '⏳ Calculando...' : '🧮 Calcular precio en Guatemala' }}
+    </button>
+</div>
 
             <!-- RESULTADO COTIZACIÓN -->
             <div v-if="cotizacion" class="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">

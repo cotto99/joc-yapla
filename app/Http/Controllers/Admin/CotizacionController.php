@@ -47,4 +47,6 @@ class CotizacionController extends Controller
         'cotizacion' => $cotizacion
     ]);
 }
+
+
 }

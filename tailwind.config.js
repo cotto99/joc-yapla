@@ -8,6 +8,7 @@ export default {
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
         './resources/js/**/*.vue',
+        
     ],
 
     theme: {
@@ -17,6 +18,6 @@ export default {
             },
         },
     },
-
+darkMode: 'class',
     plugins: [forms],
 };

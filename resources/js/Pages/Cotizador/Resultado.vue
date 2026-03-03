@@ -21,7 +21,6 @@ function enviarPedido() {
         forceFormData: true,
     })
 }
-
 function fmt(val, usd = false) {
     return new Intl.NumberFormat('es-GT', {
         style: 'currency',
