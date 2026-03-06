@@ -18,29 +18,35 @@ class CotizadorController extends Controller
     }
 
     public function storePedido(Request $request, Cotizacion $cotizacion)
-{
-    if ($cotizacion->pedido) {
-        return redirect()->back()->withErrors(['error' => 'Esta cotización ya tiene un pedido.']);
-    }
-
-    $request->validate([
-        'nombre'    => 'required|string|max:255',
-        'apellido'  => 'required|string|max:255',
-        'telefono'  => 'required|string|max:20',
-        'email'     => 'nullable|email',
-        'dpi'       => 'nullable|string|max:20',
-        'direccion' => 'required|string',
-        'comprobante_anticipo' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-        'notas'     => 'nullable|string',
-    ]);
-
-    $comprobante = null;
-    if ($request->hasFile('comprobante_anticipo')) {
-        $comprobante = $request->file('comprobante_anticipo')
-            ->store('comprobantes', 'public');
-    }
-
-    DB::transaction(function () use ($request, $cotizacion, $comprobante) {
+    {
+        $request->validate([
+            'nombre'    => 'required|string|max:255',
+            'apellido'  => 'required|string|max:255',
+            'telefono'  => 'required|string|max:20',
+            'email'     => 'nullable|email',
+            'dpi'       => 'nullable|string|max:20',
+            'direccion' => 'required|string',
+            'envio_gratis' => 'boolean',
+            'comprobante_anticipo' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'notas'     => 'nullable|string',
+        ]);
+    
+        $comprobante = null;
+        if ($request->hasFile('comprobante_anticipo')) {
+            $comprobante = $request->file('comprobante_anticipo')
+                ->store('comprobantes', 'public');
+        }
+    
+        // Si aplica envío gratis, recalcular total y anticipo
+        $envioGratis = $request->boolean('envio_gratis', false);
+        $montoAnticipo = $cotizacion->anticipo_gtq;
+    
+        if ($envioGratis && $cotizacion->costo_entrega > 0) {
+            $nuevoTotal    = $cotizacion->total_gtq - $cotizacion->costo_entrega;
+            $anticipoPct   = (float) \App\Models\Configuracion::get('anticipo_pct', 50);
+            $montoAnticipo = round($nuevoTotal * ($anticipoPct / 100), 2);
+        }
+    
         $pedido = Pedido::create([
             'codigo'               => Pedido::generarCodigo(),
             'cotizacion_id'        => $cotizacion->id,
@@ -50,25 +56,23 @@ class CotizadorController extends Controller
             'email'                => $request->email,
             'dpi'                  => $request->dpi,
             'direccion'            => $request->direccion,
+            'envio_gratis'         => $envioGratis,
             'comprobante_anticipo' => $comprobante,
-            'monto_anticipo'       => $cotizacion->anticipo_gtq,
+            'monto_anticipo'       => $montoAnticipo,
             'estado'               => 'pendiente',
             'notas'                => $request->notas,
         ]);
-
+    
         PedidoTracking::create([
             'pedido_id'   => $pedido->id,
             'estado'      => 'pendiente',
-            'descripcion' => 'Pedido recibido. Estamos verificando tu comprobante de pago.',
+            'descripcion' => 'Pedido recibido. En espera de confirmación.',
         ]);
-
+    
         $cotizacion->update(['estado' => 'pedido']);
-
-        session(['ultimo_pedido_codigo' => $pedido->codigo]);
-    });
-
-    return redirect()->route('cotizador.gracias');
-}
+    
+        return redirect()->route('cotizador.gracias', ['codigo' => $pedido->codigo]);
+    }
     public function cotizar(Request $request)
     {
         $request->validate([

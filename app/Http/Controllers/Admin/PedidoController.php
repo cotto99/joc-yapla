@@ -7,6 +7,7 @@ use App\Models\Cotizacion;
 use App\Models\PedidoTracking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class PedidoController extends Controller
@@ -32,16 +33,35 @@ class PedidoController extends Controller
     public function actualizarEstado(Request $request, Pedido $pedido)
     {
         $request->validate([
-            'estado' => 'required|in:pendiente,confirmado,en_camino,entregado,cancelado',
-            'notas'  => 'nullable|string|max:500',
+            'estado'   => 'required|in:pendiente,confirmado,en_camino,entregado,cancelado',
+            'notas'    => 'nullable|string|max:500',
+            'ubicacion'=> 'nullable|string|max:255',
+            'comprobante_complemento' => [
+                Rule::requiredIf($request->estado === 'entregado' && !$pedido->comprobante_complemento),
+                'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120',
+            ],
+            'monto_complemento' => [
+                Rule::requiredIf($request->estado === 'entregado'),
+                'nullable', 'numeric', 'min:0',
+            ],
         ]);
-
-        DB::transaction(function () use ($request, $pedido) {
-            $pedido->update([
+    
+        // Guardar comprobante complemento si viene
+        $datosExtra = [];
+        if ($request->hasFile('comprobante_complemento')) {
+            $datosExtra['comprobante_complemento'] = $request->file('comprobante_complemento')
+                ->store('complementos', 'public');
+        }
+        if ($request->filled('monto_complemento')) {
+            $datosExtra['monto_complemento'] = $request->monto_complemento;
+        }
+    
+        DB::transaction(function () use ($request, $pedido, $datosExtra) {
+            $pedido->update(array_merge([
                 'estado' => $request->estado,
                 'notas'  => $request->notas,
-            ]);
-
+            ], $datosExtra));
+    
             PedidoTracking::create([
                 'pedido_id'   => $pedido->id,
                 'estado'      => $request->estado,
@@ -49,10 +69,9 @@ class PedidoController extends Controller
                 'ubicacion'   => $request->ubicacion ?? null,
             ]);
         });
-
+    
         return redirect()->back()->with('success', 'Estado actualizado.');
     }
-
     public function agregarTracking(Request $request, Pedido $pedido)
     {
         $request->validate([

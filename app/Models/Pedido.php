@@ -9,7 +9,9 @@ class Pedido extends Model
     protected $fillable = [
         'codigo', 'cotizacion_id', 'nombre', 'apellido',
         'telefono', 'email', 'dpi', 'direccion',
+        'envio_gratis',
         'comprobante_anticipo', 'monto_anticipo',
+        'comprobante_complemento', 'monto_complemento',
         'estado', 'notas',
     ];
 
