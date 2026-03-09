@@ -20,33 +20,32 @@ class CotizadorController extends Controller
     public function storePedido(Request $request, Cotizacion $cotizacion)
     {
         $request->validate([
-            'nombre'    => 'required|string|max:255',
-            'apellido'  => 'required|string|max:255',
-            'telefono'  => 'required|string|max:20',
-            'email'     => 'nullable|email',
-            'dpi'       => 'nullable|string|max:20',
-            'direccion' => 'required|string',
-            'envio_gratis' => 'boolean',
+            'nombre'               => 'required|string|max:255',
+            'apellido'             => 'required|string|max:255',
+            'telefono'             => 'required|string|max:20',
+            'email'                => 'nullable|email',
+            'dpi'                  => 'nullable|string|max:20',
+            'direccion'            => 'required|string',
+            'envio_gratis'         => 'boolean',
             'comprobante_anticipo' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-            'notas'     => 'nullable|string',
+            'notas'                => 'nullable|string',
         ]);
-    
+
         $comprobante = null;
         if ($request->hasFile('comprobante_anticipo')) {
             $comprobante = $request->file('comprobante_anticipo')
                 ->store('comprobantes', 'public');
         }
-    
-        // Si aplica envío gratis, recalcular total y anticipo
-        $envioGratis = $request->boolean('envio_gratis', false);
+
+        $envioGratis   = $request->boolean('envio_gratis', false);
         $montoAnticipo = $cotizacion->anticipo_gtq;
-    
+
         if ($envioGratis && $cotizacion->costo_entrega > 0) {
             $nuevoTotal    = $cotizacion->total_gtq - $cotizacion->costo_entrega;
-            $anticipoPct   = (float) \App\Models\Configuracion::get('anticipo_pct', 50);
+            $anticipoPct   = (float) Configuracion::get('anticipo_pct', 50);
             $montoAnticipo = round($nuevoTotal * ($anticipoPct / 100), 2);
         }
-    
+
         $pedido = Pedido::create([
             'codigo'               => Pedido::generarCodigo(),
             'cotizacion_id'        => $cotizacion->id,
@@ -62,17 +61,19 @@ class CotizadorController extends Controller
             'estado'               => 'pendiente',
             'notas'                => $request->notas,
         ]);
-    
+
         PedidoTracking::create([
             'pedido_id'   => $pedido->id,
             'estado'      => 'pendiente',
             'descripcion' => 'Pedido recibido. En espera de confirmación.',
         ]);
-    
+
         $cotizacion->update(['estado' => 'pedido']);
-    
-        return redirect()->route('cotizador.gracias', ['codigo' => $pedido->codigo]);
+
+        // Redirigir pasando el codigo como parámetro de ruta
+        return redirect()->route('cotizador.gracias', $pedido->codigo);
     }
+
     public function cotizar(Request $request)
     {
         $request->validate([
@@ -80,9 +81,9 @@ class CotizadorController extends Controller
             'precio_usd'      => 'required|numeric|min:0.01',
             'nombre_producto' => 'nullable|string|max:255',
         ]);
-    
+
         $tipoCambio = $this->obtenerTipoCambioBanguat();
-    
+
         $gananciaPct = (float) Configuracion::get('ganancia_pct', 15);
         $fleteUsd    = (float) Configuracion::get('flete_usd', 10);
         $arancelPct  = (float) Configuracion::get('arancel_pct', 12);
@@ -90,7 +91,7 @@ class CotizadorController extends Controller
         $entregaGtq  = (float) Configuracion::get('entrega_local_gtq', 50);
         $anticipoPct = (float) Configuracion::get('anticipo_pct', 50);
         $tiempoEst   = Configuracion::get('tiempo_estimado', '15 a 21 días hábiles');
-    
+
         $precioUsd = (float) $request->precio_usd;
         $precioGtq = $precioUsd * $tipoCambio;
         $ganancia  = $precioGtq * ($gananciaPct / 100);
@@ -99,10 +100,9 @@ class CotizadorController extends Controller
         $comision  = $precioGtq * ($comisionPct / 100);
         $totalGtq  = $precioGtq + $ganancia + $flete + $arancel + $comision + $entregaGtq;
         $anticipo  = $totalGtq * ($anticipoPct / 100);
-    
-        // Extraer imagen automáticamente del link de Amazon
+
         $imagenUrl = $this->extraerImagenAmazon($request->link_amazon);
-    
+
         $cotizacion = Cotizacion::create([
             'link_amazon'     => $request->link_amazon,
             'imagen_url'      => $imagenUrl,
@@ -121,38 +121,40 @@ class CotizadorController extends Controller
             'ip_cliente'      => $request->ip(),
             'estado'          => 'consultada',
         ]);
-    
+
         return redirect()->route('cotizador.resultado', $cotizacion->id);
     }
-    
-    /**
-     * Extrae la imagen principal de un link de Amazon
-     */
+
     private function extraerImagenAmazon(string $url): ?string
     {
         try {
-            // Extraer el ASIN del link de Amazon
-            // Formatos: /dp/ASIN, /gp/product/ASIN, /product/ASIN
+            $urlFinal = $url;
+
+            if (str_contains($url, 'a.co') || str_contains($url, 'amzn.to')) {
+                $headers  = @get_headers($url, true);
+                $urlFinal = $headers['Location'] ?? $url;
+                if (is_array($urlFinal)) {
+                    $urlFinal = end($urlFinal);
+                }
+            }
+
             preg_match(
                 '/(?:dp|gp\/product|product)\/([A-Z0-9]{10})/i',
-                $url,
+                $urlFinal,
                 $matches
             );
-    
+
             if (empty($matches[1])) {
                 return null;
             }
-    
-            $asin = $matches[1];
-    
-            // URL directa de imagen de Amazon con el ASIN
-            // Amazon tiene este patrón estándar para imágenes principales
-            return "https://images-na.ssl-images-amazon.com/images/P/{$asin}.01.LZZZZZZZ.jpg";
-    
+
+            return "https://m.media-amazon.com/images/P/{$matches[1]}.01._SCLZZZZZZZ_.jpg";
+
         } catch (\Exception $e) {
             return null;
         }
     }
+
     private function obtenerTipoCambioBanguat(): float
     {
         try {
@@ -167,84 +169,45 @@ class CotizadorController extends Controller
         return (float) Configuracion::get('tipo_cambio', 7.80);
     }
 
-    public function pedido(Request $request, Cotizacion $cotizacion)
+    public function resultado(Cotizacion $cotizacion)
+    {
+        return Inertia::render('Cotizador/Resultado', [
+            'cotizacion' => $cotizacion,
+        ]);
+    }
+
+    public function trackingForm()
+    {
+        return Inertia::render('Cotizador/Tracking', [
+            'pedido' => null,
+            'error'  => null,
+        ]);
+    }
+
+    public function tracking(Request $request)
     {
         $request->validate([
-            'nombre'     => 'required|string|max:255',
-            'apellido'   => 'required|string|max:255',
-            'telefono'   => 'required|string|max:20',
-            'email'      => 'nullable|email',
-            'dpi'        => 'nullable|string|max:20',
-            'direccion'  => 'required|string',
-            'comprobante_anticipo' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
-            'notas'      => 'nullable|string',
+            'codigo' => 'required|string',
         ]);
 
-        $path = $request->file('comprobante_anticipo')
-                        ->store('comprobantes', 'public');
+        $pedido = Pedido::with(['trackings', 'cotizacion'])
+            ->where('codigo', strtoupper(trim($request->codigo)))
+            ->first();
 
-        Pedido::create([
-            'cotizacion_id'        => $cotizacion->id,
-            'nombre'               => $request->nombre,
-            'apellido'             => $request->apellido,
-            'telefono'             => $request->telefono,
-            'email'                => $request->email,
-            'dpi'                  => $request->dpi,
-            'direccion'            => $request->direccion,
-            'comprobante_anticipo' => $path,
-            'monto_anticipo'       => $cotizacion->anticipo_gtq,
-            'estado'               => 'pendiente',
-            'notas'                => $request->notas,
+        if (!$pedido) {
+            return back()->with('error', 'No encontramos ningún pedido con ese código.');
+        }
+
+        return Inertia::render('Cotizador/Tracking', [
+            'pedido' => $pedido,
+            'error'  => null,
         ]);
-
-        $cotizacion->update(['estado' => 'pedido']);
-
-        return redirect()->route('cotizador.gracias');
     }
 
-  
-    public function resultado(Cotizacion $cotizacion)
-{
-    return Inertia::render('Cotizador/Resultado', [
-        'cotizacion' => $cotizacion
-    ]);
-}
-
-public function trackingForm()
-{
-    return Inertia::render('Cotizador/Tracking', [
-        'pedido' => null,
-        'error'  => null,
-    ]);
-}
-
-public function tracking(Request $request)
-{
-    $request->validate([
-        'codigo' => 'required|string'
-    ]);
-
-    $pedido = Pedido::with(['trackings', 'cotizacion'])
-        ->where('codigo', strtoupper(trim($request->codigo)))
-        ->first();
-
-    if (!$pedido) {
-        return back()->with('error', 'No encontramos ningún pedido con ese código.');
+    // gracias() ahora recibe el codigo como parámetro de ruta
+    public function gracias(string $codigo)
+    {
+        $pedido = Pedido::where('codigo', $codigo)->firstOrFail();
+        return Inertia::render('Cotizador/Gracias', ['pedido' => $pedido]);
     }
-
-    return Inertia::render('Cotizador/Tracking', [
-        'pedido' => $pedido,
-        'error'  => null,
-    ]);
-}
-
-public function gracias()
-{
-    $codigo = session('ultimo_pedido_codigo');
-    if (!$codigo) return redirect('/');
-
-    $pedido = Pedido::where('codigo', $codigo)->firstOrFail();
-    return Inertia::render('Cotizador/Gracias', ['pedido' => $pedido]);
-}
-
 }

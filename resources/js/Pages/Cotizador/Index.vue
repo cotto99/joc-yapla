@@ -73,6 +73,8 @@ function fmt(val, moneda = 'GTQ') {
         <!-- HEADER -->
         <header class="bg-black border-b border-yellow-500/30 shadow-lg shadow-yellow-500/10">
             <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+                <img src="/images/logo-safari.png" alt="Safari" class="h-14 w-auto" />
+
                 <a href="/tracking"
                    class="border border-yellow-500 text-yellow-400 hover:bg-yellow-500 hover:text-black px-4 py-2 rounded-lg text-sm font-bold transition">
                     📦 Rastrear pedido

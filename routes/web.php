@@ -11,7 +11,7 @@ Route::get('/',                             [CotizadorController::class, 'index'
 Route::post('/cotizar',                     [CotizadorController::class, 'cotizar'])->name('cotizador.cotizar');
 Route::get('/resultado/{cotizacion}',       [CotizadorController::class, 'resultado'])->name('cotizador.resultado');
 Route::post('/resultado/{cotizacion}/pedido',[CotizadorController::class, 'storePedido'])->name('cotizador.pedido');
-Route::get('/gracias',                      [CotizadorController::class, 'gracias'])->name('cotizador.gracias');
+Route::get('/gracias/{codigo}', [CotizadorController::class, 'gracias'])->name('cotizador.gracias');
 Route::get('/tracking',                     [CotizadorController::class, 'trackingForm'])->name('cotizador.tracking');
 Route::post('/tracking',                    [CotizadorController::class, 'tracking'])->name('cotizador.tracking.buscar');
 
@@ -36,6 +36,7 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
     Route::get('/configuracion',  [ConfiguracionController::class, 'index'])->name('admin.configuracion');
     Route::post('/configuracion', [ConfiguracionController::class, 'update'])->name('admin.configuracion.update');
 });
+
 
 // Redirect dashboard genérico
 Route::get('/dashboard', fn() => redirect()->route('admin.dashboard'))
